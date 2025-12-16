@@ -38,11 +38,11 @@
             </a-select-option>
           </a-select>
         </a-col>
-        <a-col>
+        <a-col v-if="!root">
           <a-input :value="pickValue.description" class="ant-col-title" :placeholder="local['description']" @blur="onInputDescription"/>
         </a-col>
         <a-col :span="6" class="ant-col-setting">
-          <a-tooltip>
+          <a-tooltip v-if="!root">
             <span slot="title" v-text="local['adv_setting']">高级设置</span>
             <a-button type="link" icon="setting" class="setting-icon" @click="onSetting"/>
           </a-tooltip>
