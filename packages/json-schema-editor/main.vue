@@ -1,5 +1,16 @@
 <template>
   <div class="json-schema-editor">
+      <!-- 顶层字段编辑区（仅根节点显示） -->
+      <a-row v-if="root && deep === 0" class="root-fields-row" :gutter="10">
+        <a-col :span="12">
+          <span class="field-label">Name:</span>
+          <a-input :value="rootName" placeholder="Schema Name" @blur="onInputRootName"/>
+        </a-col>
+        <a-col :span="12">
+          <span class="field-label">Strict:</span>
+          <a-switch :checked="rootStrict" @change="onChangeRootStrict"/>
+        </a-col>
+      </a-row>
       <a-row class="row" :gutter="10">
         <a-col :span="8" class="ant-col-name">
           <div :style="{marginLeft:`${20*deep}px`}" class="ant-col-name-c">
@@ -28,7 +39,7 @@
           </a-select>
         </a-col>
         <a-col>
-          <a-input :value="pickValue.title" class="ant-col-title" :placeholder="local['title']" @blur="onInputTitle"/>
+          <a-input :value="pickValue.description" class="ant-col-title" :placeholder="local['description']" @blur="onInputDescription"/>
         </a-col>
         <a-col :span="6" class="ant-col-setting">
           <a-tooltip>
@@ -181,10 +192,18 @@ export default {
   },
   computed: {
     pickValue(){
-      return  Object.values(this.value)[0]
+      // 支持新格式 { name, strict, schema } 和旧格式 { schema: {...} }
+      return this.value.schema || Object.values(this.value)[0]
     },
     pickKey(){
-      return  Object.keys(this.value)[0]
+      // 支持新格式 { name, strict, schema } 和旧格式 { schema: {...} }
+      return this.value.schema ? 'schema' : Object.keys(this.value)[0]
+    },
+    rootName(){
+      return this.value.name || ''
+    },
+    rootStrict(){
+      return !!this.value.strict
     },
     isObject(){
       return this.pickValue.type === 'object'
@@ -202,7 +221,7 @@ export default {
       return TYPE[this.pickValue.type].attr
     },
     ownProps () {
-      return [ 'type', 'title', 'properties', 'items','required', ...Object.keys(this.advancedAttr)]
+      return [ 'type', 'description', 'properties', 'items','required', ...Object.keys(this.advancedAttr)]
     },
     advancedNotEmptyValue(){
       const jsonNode = Object.assign({},this.advancedValue);
@@ -242,6 +261,19 @@ export default {
   },
   mounted () {
     this.init()
+    // 初始化顶层字段（仅根节点）
+    if (this.root && this.deep === 0) {
+      if (this.value.name === undefined) {
+        this.$set(this.value, 'name', 'user_data')
+      }
+      if (this.value.strict === undefined) {
+        this.$set(this.value, 'strict', true)
+      }
+      // 初始化空的 schema
+      if (this.pickKey === 'schema' && (!this.pickValue || Object.keys(this.pickValue).length === 0)) {
+        this.$set(this.value, 'schema', { type: 'object' })
+      }
+    }
   },
   methods: {
     init(){
@@ -284,8 +316,14 @@ export default {
         this.$set(this.parent,'required', [...new Set(requireds)])
       }
     },
-    onInputTitle(e) {
-      this.$set(this.pickValue, 'title', e.target.value)
+    onInputDescription(e) {
+      this.$set(this.pickValue, 'description', e.target.value)
+    },
+    onInputRootName(e){
+      this.$set(this.value, 'name', e.target.value)
+    },
+    onChangeRootStrict(checked){
+      this.$set(this.value, 'strict', checked)
     },
     onChangeType() {
       this.parseCustomProps()
@@ -359,7 +397,7 @@ export default {
       const node = this.pickValue
       node.properties || this.$set(node,'properties',{})
       const props = node.properties
-      this.$set(props,name,{type: type, title: ''})
+      this.$set(props,name,{type: type, description: ''})
     },
     parseCustomProps () {
       const ownProps = this.ownProps
@@ -442,6 +480,20 @@ export default {
 }
 </script>
 <style scoped>
+.json-schema-editor .root-fields-row {
+  display: flex;
+  margin: 12px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+}
+.json-schema-editor .root-fields-row .field-label {
+  display: inline-block;
+  width: 60px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+}
 .json-schema-editor .row {
   display: flex;
   margin: 12px;

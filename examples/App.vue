@@ -10,12 +10,18 @@
       <div>
         A json-schema editor of high efficient and easy-to-use, base on Vue.
         <a @click="visible = true">import json</a>
+        <span style="margin-left: 20px;">
+          <label>
+            <input type="checkbox" v-model="liveUpdate" />
+            实时渲染 JSON
+          </label>
+        </span>
       </div>
     </div>
     <div class="container">
-      <codemirror class="code" v-model="jsonStr" :readOnly="false" />
+      <codemirror v-if="liveUpdate" class="code" v-model="jsonStr" :readOnly="false" />
       <json-schema-editor
-        class="schema"
+        :class="liveUpdate ? 'schema' : 'schema-full'"
         :value="tree"
         disabledType
         lang="zh_CN"
@@ -59,6 +65,7 @@ export default {
       version: app.version,
       importJson: "",
       visible: false,
+      liveUpdate: true,
       extraSetting: {
         integer: {
           default: {
@@ -74,24 +81,26 @@ export default {
         },
       },
       tree: {
-        root: {
+        name: "user_data",
+        strict: true,
+        schema: {
           type: "object",
-          title: "条件",
+          description: "条件",
           properties: {
             name: {
               type: "string",
-              title: "名称",
+              description: "名称",
               maxLength: 10,
               minLength: 2,
             },
             appId: {
               type: "integer",
-              title: "应用ID",
+              description: "应用ID",
               default: 3,
             },
             credate: {
               type: "string",
-              title: "创建日期",
+              description: "创建日期",
               format: "date",
             },
           },
@@ -104,7 +113,12 @@ export default {
     handleImportJson() {
       const t = GenerateSchema.json(JSON.parse(this.importJson));
       delete t.$schema;
-      this.tree.root = t;
+      // 保留 name 和 strict 字段
+      this.tree = {
+        name: this.tree.name || '',
+        strict: this.tree.strict || false,
+        schema: t
+      };
       this.visible = false;
     },
   },
@@ -150,6 +164,15 @@ export default {
 .schema {
   margin-left: 20px;
   width: 50%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+}
+.schema-full {
+  width: 100%;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
